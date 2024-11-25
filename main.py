@@ -58,7 +58,7 @@ def crypttext_to_int(crypttext):
 
 def text_to_int(text):
     """
-    Convert text to an integer by interpreting each character as its ASCII value.
+    Convert text to an integer by encoding it in UTF-8 and interpreting as bytes.
     
     Args:
         text (str): The text to convert.
@@ -66,29 +66,36 @@ def text_to_int(text):
     Returns:
         int: The corresponding integer.
     """
+    utf8_bytes = text.encode('utf-8')
     num = 0
-    for char in text:
-        num = (num << 8) + ord(char)
+    for byte in utf8_bytes:
+        num = (num << 8) + byte
     return num
 
 def int_to_text(num):
     """
-    Convert an integer back to text by interpreting each byte as a character.
+    Convert an integer back to text by interpreting it as UTF-8 bytes.
     
     Args:
         num (int): The integer to convert.
     
     Returns:
         str: The corresponding text.
+    
+    Raises:
+        ValueError: If the integer cannot be decoded as UTF-8.
     """
+    if num == 0:
+        return '\x00'
     bytes_list = []
     while num > 0:
         bytes_list.append(num & 0xFF)
         num = num >> 8
-    # Handle the case where num is 0
-    if not bytes_list:
-        bytes_list.append(0)
-    return ''.join(chr(b) for b in reversed(bytes_list))
+    bytes_list.reverse()
+    try:
+        return bytes(bytes_list).decode('utf-8')
+    except UnicodeDecodeError as e:
+        raise ValueError(f"Decoded bytes are not valid UTF-8: {e}")
 
 def encode_number(input_num):
     """
