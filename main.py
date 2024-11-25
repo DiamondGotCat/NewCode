@@ -6,7 +6,7 @@ import sys
 
 # Define the character set and base
 CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-BASE = len(CHARSET)
+BASE = len(CHARSET)  # 32
 
 def int_to_crypttext(num):
     """
@@ -27,11 +27,20 @@ def int_to_crypttext(num):
         chars.append(CHARSET[rem])
         num = num // BASE
     
-    # Group into 4-character segments from least significant first, reverse each group
+    # Reverse to make most significant digits first
+    chars = chars[::-1]
+    
+    # Group into 4-character segments from most significant first, pad with 'A's
     grouped = []
     for i in range(0, len(chars), 4):
-        group = ''.join(chars[i:i+4][::-1])  # Reverse each group
+        group = ''.join(chars[i:i+4])
+        if len(group) < 4:
+            group = group.ljust(4, 'A')  # Pad with 'A's to make 4 characters
         grouped.append(group)
+    
+    # Reverse each group for better readability
+    grouped = [group[::-1] for group in grouped]
+    
     return '-'.join(grouped)
 
 def crypttext_to_int(crypttext):
@@ -47,15 +56,21 @@ def crypttext_to_int(crypttext):
     Raises:
         ValueError: If the crypttext contains invalid characters.
     """
-    clean_text = crypttext.replace('-', '').upper()
     groups = crypttext.upper().split('-')
     reversed_chars = []
     for group in groups:
-        reversed_group = group[::-1]  # Reverse each group back
+        # Reverse each group back to original order
+        reversed_group = group[::-1]
         reversed_chars.extend(reversed_group)
     
+    # Convert list to string
+    digit_str = ''.join(reversed_chars)
+    
+    # Remove trailing 'A's used for padding
+    digit_str = digit_str.rstrip('A')
+    
     num = 0
-    for char in reversed_chars:
+    for char in digit_str:
         if char not in CHARSET:
             raise ValueError(f"Invalid character: {char}")
         index = CHARSET.index(char)
