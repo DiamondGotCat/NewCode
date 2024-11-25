@@ -48,8 +48,14 @@ def crypttext_to_int(crypttext):
         ValueError: If the crypttext contains invalid characters.
     """
     clean_text = crypttext.replace('-', '').upper()
+    groups = crypttext.upper().split('-')
+    reversed_chars = []
+    for group in groups:
+        reversed_group = group[::-1]  # Reverse each group back
+        reversed_chars.extend(reversed_group)
+    
     num = 0
-    for char in clean_text:
+    for char in reversed_chars:
         if char not in CHARSET:
             raise ValueError(f"Invalid character: {char}")
         index = CHARSET.index(char)
