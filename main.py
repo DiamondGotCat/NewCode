@@ -27,11 +27,11 @@ def int_to_crypttext(num):
         chars.append(CHARSET[rem])
         num = num // BASE
     
-    # Reverse to get the correct order
-    chars = chars[::-1]
-    
-    # Group into 4-character segments separated by '-'
-    grouped = [''.join(chars[i:i+4]) for i in range(0, len(chars), 4)]
+    # Group into 4-character segments from least significant first, reverse each group
+    grouped = []
+    for i in range(0, len(chars), 4):
+        group = ''.join(chars[i:i+4][::-1])  # Reverse each group
+        grouped.append(group)
     return '-'.join(grouped)
 
 def crypttext_to_int(crypttext):
