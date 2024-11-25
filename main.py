@@ -6,7 +6,7 @@ import sys
 
 # Define the character set and base
 CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-BASE = len(CHARSET)  # 34
+BASE = len(CHARSET)
 
 def int_to_crypttext(num):
     """
@@ -71,6 +71,25 @@ def text_to_int(text):
         num = (num << 8) + ord(char)
     return num
 
+def int_to_text(num):
+    """
+    Convert an integer back to text by interpreting each byte as a character.
+    
+    Args:
+        num (int): The integer to convert.
+    
+    Returns:
+        str: The corresponding text.
+    """
+    bytes_list = []
+    while num > 0:
+        bytes_list.append(num & 0xFF)
+        num = num >> 8
+    # Handle the case where num is 0
+    if not bytes_list:
+        bytes_list.append(0)
+    return ''.join(chr(b) for b in reversed(bytes_list))
+
 def encode_number(input_num):
     """
     Encode a number into NewCode.
@@ -106,7 +125,7 @@ def encode_text(input_text):
     num = text_to_int(input_text)
     return int_to_crypttext(num)
 
-def decode_crypttext(input_crypttext):
+def decode_to_number(input_crypttext):
     """
     Decode a NewCode string back into a number.
     
@@ -117,6 +136,19 @@ def decode_crypttext(input_crypttext):
         int: The decoded number.
     """
     return crypttext_to_int(input_crypttext)
+
+def decode_to_text(input_crypttext):
+    """
+    Decode a NewCode string back into text.
+    
+    Args:
+        input_crypttext (str): The NewCode string.
+    
+    Returns:
+        str: The decoded text.
+    """
+    num = crypttext_to_int(input_crypttext)
+    return int_to_text(num)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -131,7 +163,8 @@ def main():
     encode_parser.add_argument('--input', required=True, help='Input value to encode')
     
     # Decode subparser
-    decode_parser = subparsers.add_parser('decode', help='Decode a NewCode string back into a number')
+    decode_parser = subparsers.add_parser('decode', help='Decode a NewCode string back into a number or text')
+    decode_parser.add_argument('--output', choices=['number', 'text'], default='number', help='Type to decode to: number or text (default: number)')
     decode_parser.add_argument('--input', required=True, help='NewCode string to decode')
     
     args = parser.parse_args()
@@ -145,17 +178,35 @@ def main():
                 print(f"Error: {e}", file=sys.stderr)
                 sys.exit(1)
         elif args.type == 'text':
-            result = encode_text(args.input)
-            print(f"Encoded NewCode: {result}")
+            try:
+                result = encode_text(args.input)
+                print(f"Encoded NewCode: {result}")
+            except Exception as e:
+                print(f"Error: {e}", file=sys.stderr)
+                sys.exit(1)
         else:
             print("Invalid encode type. Use 'number' or 'text'.", file=sys.stderr)
             sys.exit(1)
     elif args.command == 'decode':
-        try:
-            result = decode_crypttext(args.input)
-            print(f"Decoded Number: {result}")
-        except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
+        if args.output == 'number':
+            try:
+                result = decode_to_number(args.input)
+                print(f"Decoded Number: {result}")
+            except ValueError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif args.output == 'text':
+            try:
+                result = decode_to_text(args.input)
+                print(f"Decoded Text: {result}")
+            except ValueError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                sys.exit(1)
+            except Exception as e:
+                print(f"Error: {e}", file=sys.stderr)
+                sys.exit(1)
+        else:
+            print("Invalid decode output type. Use 'number' or 'text'.", file=sys.stderr)
             sys.exit(1)
     else:
         parser.print_help()
