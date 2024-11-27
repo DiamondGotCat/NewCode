@@ -1,6 +1,9 @@
 # NewCode (Offline and Online)
 Encode Text in Offline.
 
+## File Extension 
+- `.newc` (NewCode Encoded File)
+
 ## Example
 
 ### Number
