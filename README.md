@@ -8,3 +8,6 @@ Encode Text in Offline.
 
 ### Text 
 Example **←→** N2MT-AZYF-AFD5
+
+### File
+Example.png **←→** AXEC-BHUV-WBFW-AASC-4AAA-JJLU-AAKT-AEAA **...**
