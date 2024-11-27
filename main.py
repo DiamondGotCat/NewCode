@@ -3,6 +3,7 @@
 
 import argparse
 import sys
+import os
 
 # Define the character set and base
 CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -118,6 +119,54 @@ def int_to_text(num):
     except UnicodeDecodeError as e:
         raise ValueError(f"Decoded bytes are not valid UTF-8: {e}")
 
+def file_to_int(file_path):
+    """
+    Convert a file's binary content to an integer.
+    
+    Args:
+        file_path (str): Path to the input file.
+    
+    Returns:
+        int: The corresponding integer.
+    
+    Raises:
+        IOError: If the file cannot be read.
+    """
+    try:
+        with open(file_path, 'rb') as f:
+            file_bytes = f.read()
+        num = 0
+        for byte in file_bytes:
+            num = (num << 8) + byte
+        return num
+    except Exception as e:
+        raise IOError(f"Failed to read file '{file_path}': {e}")
+
+def int_to_file(num, file_path):
+    """
+    Convert an integer to binary data and write to a file.
+    
+    Args:
+        num (int): The integer to convert.
+        file_path (str): Path to the output file.
+    
+    Raises:
+        IOError: If the file cannot be written.
+    """
+    if num == 0:
+        bytes_list = [0]
+    else:
+        bytes_list = []
+        while num > 0:
+            bytes_list.append(num & 0xFF)
+            num = num >> 8
+        bytes_list.reverse()
+    try:
+        with open(file_path, 'wb') as f:
+            f.write(bytes(bytes_list))
+    except Exception as e:
+        raise IOError(f"Failed to write to file '{file_path}': {e}")
+
 def encode_number(input_num):
     """
     Encode a number into NewCode.
@@ -153,6 +202,22 @@ def encode_text(input_text):
     num = text_to_int(input_text)
     return int_to_crypttext(num)
 
+def encode_file(input_file_path):
+    """
+    Encode a file into NewCode.
+    
+    Args:
+        input_file_path (str): Path to the input file.
+    
+    Returns:
+        str: The NewCode string.
+    
+    Raises:
+        IOError: If the file cannot be read.
+    """
+    num = file_to_int(input_file_path)
+    return int_to_crypttext(num)
+
 def decode_to_number(input_crypttext):
     """
     Decode a NewCode string back into a number.
@@ -178,6 +243,20 @@ def decode_to_text(input_crypttext):
     num = crypttext_to_int(input_crypttext)
     return int_to_text(num)
 
+def decode_to_file(input_crypttext, output_file_path):
+    """
+    Decode a NewCode string back into a file.
+    
+    Args:
+        input_crypttext (str): The NewCode string.
+        output_file_path (str): Path to the output file.
+    
+    Raises:
+        IOError: If the file cannot be written.
+    """
+    num = crypttext_to_int(input_crypttext)
+    int_to_file(num, output_file_path)
+
 def main():
     parser = argparse.ArgumentParser(
         description="NewCode Encoder/Decoder",
@@ -186,14 +265,15 @@ def main():
     subparsers = parser.add_subparsers(dest='command', help='Commands: encode or decode')
     
     # Encode subparser
-    encode_parser = subparsers.add_parser('encode', help='Encode a number or text into NewCode')
-    encode_parser.add_argument('--type', choices=['number', 'text'], required=True, help='Type to encode: number or text')
-    encode_parser.add_argument('--input', required=True, help='Input value to encode')
+    encode_parser = subparsers.add_parser('encode', help='Encode a number, text, or file into NewCode')
+    encode_parser.add_argument('--type', choices=['number', 'text', 'file'], required=True, help='Type to encode: number, text, or file')
+    encode_parser.add_argument('--input', required=True, help='Input value to encode (for file type, provide file path)')
     
     # Decode subparser
-    decode_parser = subparsers.add_parser('decode', help='Decode a NewCode string back into a number or text')
-    decode_parser.add_argument('--output', choices=['number', 'text'], default='number', help='Type to decode to: number or text (default: number)')
+    decode_parser = subparsers.add_parser('decode', help='Decode a NewCode string back into a number, text, or file')
+    decode_parser.add_argument('--output', choices=['number', 'text', 'file'], default='number', help='Type to decode to: number, text, or file (default: number)')
     decode_parser.add_argument('--input', required=True, help='NewCode string to decode')
+    decode_parser.add_argument('--output-file', help='Output file path (required if decoding to file)')
     
     args = parser.parse_args()
     
@@ -212,8 +292,18 @@ def main():
             except Exception as e:
                 print(f"Error: {e}", file=sys.stderr)
                 sys.exit(1)
+        elif args.type == 'file':
+            if not os.path.isfile(args.input):
+                print(f"Error: File '{args.input}' does not exist.", file=sys.stderr)
+                sys.exit(1)
+            try:
+                result = encode_file(args.input)
+                print(f"Encoded NewCode: {result}")
+            except IOError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                sys.exit(1)
         else:
-            print("Invalid encode type. Use 'number' or 'text'.", file=sys.stderr)
+            print("Invalid encode type. Use 'number', 'text', or 'file'.", file=sys.stderr)
             sys.exit(1)
     elif args.command == 'decode':
         if args.output == 'number':
@@ -233,8 +323,18 @@ def main():
             except Exception as e:
                 print(f"Error: {e}", file=sys.stderr)
                 sys.exit(1)
+        elif args.output == 'file':
+            if not args.output_file:
+                print("Error: '--output-file' is required when decoding to file.", file=sys.stderr)
+                sys.exit(1)
+            try:
+                decode_to_file(args.input, args.output_file)
+                print(f"Decoded file has been saved to '{args.output_file}'")
+            except IOError as e:
+                print(f"Error: {e}", file=sys.stderr)
+                sys.exit(1)
         else:
-            print("Invalid decode output type. Use 'number' or 'text'.", file=sys.stderr)
+            print("Invalid decode output type. Use 'number', 'text', or 'file'.", file=sys.stderr)
             sys.exit(1)
     else:
         parser.print_help()
